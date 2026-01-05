@@ -20,13 +20,23 @@ class StoreBotManager implements BotManager,ExternalTokenManagerInterface
      * @param string $key
      * @return Bot|null
      */
-    public function getRuntimeBot(string $key): ?Bot
+    public function getRuntimeBot(string $key): Bot
     {
-        if(empty($key)){
-            $key = env('LINE_CHANNEL_ID');
+        $key = $key ?: env('LINE_CHANNEL_ID');
+
+        if (!$key) {
+            throw new \RuntimeException(
+                'Bot key is required. Please set LINE_CHANNEL_ID or pass key explicitly.'
+            );
         }
 
         $bot = $this->queryBot($key);
+        if (!$bot) {
+            throw new \RuntimeException(
+                "Bot not found in database for key: {$key}. Please run install or add bot first."
+            );
+        }
+
         $bot->setExternalTokenManager($this);
         return $bot;
     }
@@ -78,13 +88,29 @@ class StoreBotManager implements BotManager,ExternalTokenManagerInterface
     /* ----- 其他 CRUD 操作 ----- */
     public function queryBot(?string $key = null): ?Bot
     {
-        $model = BotModel::where('key',$key)->first();
-        if (!$model) {
-            if($key == env('LINE_CHANNEL_ID')){
-                $this->addBot(env('LINE_CHANNEL_ID'),env('LINE_CHANNEL_SECRET'));
-            }
+
+        if (!$key) {
+            return null;
+        }
+
+        $model = BotModel::where('key', $key)->first();
+
+        if (!$model && $key === env('LINE_CHANNEL_ID')) {
+            $this->addBot(env('LINE_CHANNEL_ID'), env('LINE_CHANNEL_SECRET'));
             $model = BotModel::where('key', $key)->first();
-        };
+        }
+
+        if (!$model) {
+            return null;
+        }
+
+        if (
+            $model->key === env('LINE_CHANNEL_ID') &&
+            $model->secret !== env('LINE_CHANNEL_SECRET')
+        ) {
+            return $this->modifyBot($model->key, env('LINE_CHANNEL_SECRET'));
+        }
+
         return new Bot($model->key, $model->secret, $model->access_token);
     }
 
