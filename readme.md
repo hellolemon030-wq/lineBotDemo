@@ -1,8 +1,17 @@
 # LINE Bot Demo (Laravel + Docker)
 
 A Docker-based LINE Bot backend built with Laravel Sail.
-Clone and run with minimal configuration.
-Supports multiple LINE bots, automatic access token refresh, and CLI-based message management.
+Designed for fast setup, multi-bot support, and extensible reply handling.
+
+**Core Features:**
+
+1. Plug-and-play – clone the repo, configure `.env`, and run.
+2. Multi-bot support – manage multiple LINE bots with database persistence.
+3. Extensible AutoReply Engine – define custom reply engines with priority.
+4. Asynchronous handling – external API calls (reply/push) can be processed asynchronously to protect core service stability.
+5. CLI tools – manage LINE bots and user messages directly from the command line.
+6. Automatic access token management – optimistic locking, auto-refresh when expired.
+7. Message storage & workflow – all incoming messages are stored for history and processing.
 
 ---
 
@@ -19,8 +28,6 @@ Supports multiple LINE bots, automatic access token refresh, and CLI-based messa
 
 composer install
 
----
-
 ### 2. Environment configuration
 
 cp .env.example .env
@@ -29,28 +36,20 @@ Edit `.env` and set the following values:
 
 LINE_CHANNEL_ID=            # Default LINE Bot Channel ID  
 LINE_CHANNEL_SECRET=       # Default LINE Bot Channel Secret  
-
 LINE_MESSAGE_HANDLE_DIRECT_MODE=false
 
-When LINE_MESSAGE_HANDLE_DIRECT_MODE is set to true,
-you must manually start the queue worker:
-
-./vendor/bin/sail artisan queue:work
-
----
+> When `LINE_MESSAGE_HANDLE_DIRECT_MODE` is set to true, the system will handle incoming LINE messages in **asynchronous mode**.  
+> In this mode, API calls (reply/push) are processed via Laravel queue workers, which helps offload work from the main webhook and improve stability under load.  
+> After completing the `.env` configuration, start the queue worker manually:./vendor/bin/sail artisan queue:work
 
 ### 3. Start Docker containers
 
 ./vendor/bin/sail up -d
 
----
-
 ### 4. Initialize application
 
 ./vendor/bin/sail artisan key:generate  
 ./vendor/bin/sail artisan migrate
-
----
 
 ### 5. System health check
 
@@ -70,15 +69,13 @@ Example:
 
 ./vendor/bin/sail artisan linebot:mg add 1234567890 your_bot_secret
 
----
-
 ### Webhook configuration
 
 The system supports both a default bot and multiple bots.
 
 #### Default bot
 
-If no bot ID is specified in the webhook URL, the system will use
+If no bot ID is specified in the webhook URL, the system will use  
 the default bot configured in `.env`:
 
 https://your-domain/webhook
@@ -93,8 +90,50 @@ Example:
 
 https://your-domain/webhook/1234567890
 
-The bot is ultimately identified by its Channel credentials.
-The URL parameter is used to select the bot configuration.
+> The bot is ultimately identified by its Channel credentials.  
+> The URL parameter is used to select the bot configuration.
+
+---
+
+## AutoReply Engine
+
+1. `CoreEngine::webhook` receives incoming LINE requests.
+2. The system verifies the bot and token using HMAC-SHA256.
+3. Incoming messages are stored in the database.
+4. AutoReply Engines are triggered in priority order:
+   - **Simple Reply Engine**  
+   - **File/AI Reply Engine**
+5. **Priority handling:** If any reply engine handles the message (adds a reply), the system stops checking further engines.
+6. **Configuration:** You can adjust or add reply engines in `app/Providers/LineBotAppProvider.php`.
+
+```php
+    //app/Providers/LineBotAppProvider.php
+    public function register(): void
+    {
+        // ......
+        $this->app->singleton(ReplyEngine::class, function () {
+            $aiReplyEngine = new FileBaseAi();
+            $coreReplyEngine = new CoreReplyEngine([
+                ['engine' => new TestReplyEngine(), 'priority' => 8],   // Adjust priority to change execution order
+                ['engine' => $aiReplyEngine, 'priority' => 5],
+            ]);
+            $coreReplyEngine->addReplyEngine(new TestReplyEngine(), 4); // You can add new engines anytime
+            return $coreReplyEngine;
+        });
+    }
+```
+> ⚠️ Note: This setup is for demonstration purposes only.  
+> For production, develop and adjust reply engines according to your own business logic.
+7. Replies are sent via LINE API, either synchronously or asynchronously, depending on the `.env` setting:
+
+    LINE_MESSAGE_HANDLE_DIRECT_MODE=false   # synchronous mode (default)
+    LINE_MESSAGE_HANDLE_DIRECT_MODE=true    # asynchronous mode (queue worker must be running)
+
+    > When asynchronous mode is enabled, API calls (reply/push) are handled via Laravel queue workers.
+    > Start the worker after configuration:
+
+    ./vendor/bin/sail artisan queue:work
+---
 
 ## Message Management (CLI)
 
@@ -112,15 +151,6 @@ Example:
 
 ---
 
-## Notes
-
-- Access tokens are stored in database and refreshed automatically
-- Token refresh uses optimistic locking
-- HTTP 401 triggers token refresh
-- HTTP 403 indicates authorization failure and may require manual update
-
----
-
 ## Development
 
 Stop containers:
@@ -133,6 +163,46 @@ Start specific services only (without redis):
 
 ---
 
-## License
+## Module Relationship Diagram (ASCII)
 
-MIT
+```
+[LINE Request]
+      │
+      ▼
+[CoreEngine::webhook]
+      │
+      ├─ Verify Bot & Token (HMAC-SHA256)
+      │
+      ├─ Insert Message into DB
+      │
+      +-- Trigger AutoReply Engines  <-- Core: handle messages via priority-based engines
+      |       |
+      |       +-- TestReplyEngine       (demo engine, priority adjustable)
+      |       |
+      |       +-- FileBaseAi Engine     (demo engine, AI/file-based)
+      |       |
+      |       +-- ......                (custom engines: strongly recommended to implement per actual business logic via ReplyEngine)
+      │
+      └─ Send reply (sync / async) → LINE API
+
+[CLI Tools]
+      │
+      ├─ linebot:mg  (Add/Modify Bots)
+      │
+      └─ line:msg    (View/Reply Messages)
+
+[Jobs / Queue Workers]
+      │
+      └─ Handle async push/reply tasks to LINE API
+```
+
+---
+
+## Notes
+
+- Access tokens are stored in database and refreshed automatically
+- Token refresh uses optimistic locking
+- HTTP 401 triggers token refresh
+- HTTP 403 indicates authorization failure and may require manual update
+
+---
