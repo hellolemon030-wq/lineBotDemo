@@ -1,4 +1,7 @@
 # LINE Bot Demo (Laravel + Docker)
+Other languages:
+
+- [日本語](readme.ja.md)
 
 A Docker-based LINE Bot backend built with Laravel Sail.
 Designed for fast setup, multi-bot support, and extensible reply handling.
@@ -101,8 +104,8 @@ https://your-domain/webhook/1234567890
 2. The system verifies the bot and token using HMAC-SHA256.
 3. Incoming messages are stored in the database.
 4. AutoReply Engines are triggered in priority order:
-   - **Simple Reply Engine**  
-   - **File/AI Reply Engine**
+   - **Simple Reply Engine**  (demo)
+   - **File/AI Reply Engine** (demo)
 5. **Priority handling:** If any reply engine handles the message (adds a reply), the system stops checking further engines.
 6. **Configuration:** You can adjust or add reply engines in `app/Providers/LineBotAppProvider.php`.
 
