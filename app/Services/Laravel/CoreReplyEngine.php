@@ -4,7 +4,6 @@ namespace App\Services\Laravel;
 use App\Services\LineBot\LineMessage;
 use App\Services\LineBot\lineReplyMessage;
 use App\Services\LineBot\ReplyEngine;
-use Illuminate\Support\Facades\Log;
 use SplPriorityQueue;
 
 class CoreReplyEngine implements ReplyEngine{
@@ -45,9 +44,10 @@ class CoreReplyEngine implements ReplyEngine{
         $engineQueue = clone $this->engines;
         foreach ($engineQueue as $replyEngine) {
             //Log::warning($replyEngine::class);
-            $replyEngine->handle($lineMessage,$lineReplyMessage);
+            $handleResult = $replyEngine->handle($lineMessage,$lineReplyMessage);
 
-            if (count($lineReplyMessage->getMessages())) {
+            //if return true， subsequent engines will NOT be executed.
+            if ($handleResult === true) {
                 break;
             }
         }

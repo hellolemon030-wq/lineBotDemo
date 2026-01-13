@@ -11,6 +11,8 @@ Designed for fast setup, multi-bot support, and extensible reply handling.
 1. Plug-and-play – clone the repo, configure `.env`, and run.
 2. Multi-bot support – manage multiple LINE bots with database persistence.
 3. Extensible AutoReply Engine – define custom reply engines with priority.
+   - **Updated demo:** improved keyword/module matching mechanism; supports exact match, fuzzy match, and module-based replies.  
+   - For details on the updated module system and event-based matching, see [Bot Feature Module Guide](app/Services/Laravel/BotFeatureModule/readme.md)
 4. Asynchronous handling – external API calls (reply/push) can be processed asynchronously to protect core service stability.
 5. CLI tools – manage LINE bots and user messages directly from the command line.
 6. Automatic access token management – optimistic locking, auto-refresh when expired.
@@ -104,8 +106,16 @@ https://your-domain/webhook/1234567890
 2. The system verifies the bot and token using HMAC-SHA256.
 3. Incoming messages are stored in the database.
 4. AutoReply Engines are triggered in priority order:
-   - **Simple Reply Engine**  (demo)
-   - **File/AI Reply Engine** (demo)
+   - **AI Test Engine** (demo, lightweight vector-based matching)
+   - **ExactMatchEngine** (matches keywords exactly)
+       - Supports:
+         - **Common/Text Reply**: returns predefined text
+         - **ModuleReplyEngine**: factory-based, triggers module events such as Weather, Lottery, etc.
+   - **FuzzyMatchEngine** (matches keywords partially)
+       - Supports:
+         - **Common/Text Reply**
+         - **ModuleReplyEngine**
+   - **MediaReplyEngine** (handles non-text messages)
 5. **Priority handling:** If any reply engine handles the message (adds a reply), the system stops checking further engines.
 6. **Configuration:** You can adjust or add reply engines in `app/Providers/LineBotAppProvider.php`.
 
@@ -178,21 +188,26 @@ Start specific services only (without redis):
       │
       ├─ Insert Message into DB
       │
-      +-- Trigger AutoReply Engines  <-- Core: handle messages via priority-based engines
-      |       |
-      |       +-- TestReplyEngine       (demo engine, priority adjustable)
-      |       |
-      |       +-- FileBaseAi Engine     (demo engine, AI/file-based)
-      |       |
-      |       +-- ......                (custom engines: strongly recommended to implement per actual business logic via ReplyEngine)
+      +-- Trigger AutoReply Engines             <-- Core: handle messages via priority-based engines
+      |       │
+      |       +-- AI Test Engine                (demo, lightweight vector-based matching)
+      |       +-- ExactMatchEngine              (matches keywords exactly)
+      |       |       ├─ Common/Text Reply      (replyContent)
+      |       |       └─ ModuleReplyEngine     (factory-based, per module events: Weather, Lottery, etc.)
+      |       +-- FuzzyMatchEngine              (matches keywords fuzzily)
+      |       |       ├─ Common/Text Reply
+      |       |       └─ ModuleReplyEngine
+      |       +-- MediaReplyEngine               (handles non-text messages)
+      |       +-- DescriptionReplyEngine         (demo description)
+      |       +-- ......                         (custom engines: implement ReplyEngine per business logic)
       │
       └─ Send reply (sync / async) → LINE API
 
 [CLI Tools]
       │
-      ├─ linebot:mg  (Add/Modify Bots)
-      │
-      └─ line:msg    (View/Reply Messages)
+      ├─ linebot:mg     (Add/Modify Bots)
+      ├─ line:msg       (View/Reply Messages)
+      └─ line:replyRule      (Manage keyword/module reply rules: add/modify/delete)  <-- todo
 
 [Jobs / Queue Workers]
       │
