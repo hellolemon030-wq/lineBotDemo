@@ -63,14 +63,14 @@ class FuzzyMatchEngine implements ReplyEngine
         $rule1->replyContent = 'Fuzzy match test succeeded.';
         $rules[] = $rule1;
 
-        // Fuzzy rule: keyword '使用方法'
-        $rule2 = new MatchRule();
-        $rule2->botId = $botId;
-        $rule2->matchType = MatchRule::MATCH_TYPE_FUZZY;
-        $rule2->replyType = MatchRule::REPLY_TYPE_COMMON;
-        $rule2->keyWords = '使用方法';
-        $rule2->replyContent = 'Fuzzy match test succeeded; usage instructions: 〇〇〇〇.';
-        $rules[] = $rule2;
+        /**
+         * Simulated database-driven matching
+         */
+        $matchRuleManager = app()->get(MatchRuleManager::class);
+        $fuzzyMatchRules = $matchRuleManager->searchAllFuzzyMatchRuleByBotId($botId);
+        foreach($fuzzyMatchRules as $matchRule){
+            $rules[] = $matchRule;
+        }
 
         // Search for a fuzzy match
         foreach ($rules as $rule) {

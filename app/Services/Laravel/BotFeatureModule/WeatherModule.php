@@ -1,35 +1,76 @@
 <?php
 namespace App\Services\Laravel\BotFeatureModule;
 
-use App\Services\LineBot\LineMessage;
-use App\Services\LineBot\lineReplyMessage;
 use App\Services\LineBot\ReplyEngine;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
-class WeatherModule extends ModuleBase{
+class WeatherModule extends ModuleBase
+{
+    /**
+     * Human-readable module name.
+     */
+    static public function getModuleName(): string
+    {
+        return 'WeatherModule';
+    }
 
-    static public $areaList = [
+    /**
+     * Indicates that this module can be used by the AutoReply Engine
+     * and can be bound to keyword-based reply rules.
+     */
+    static public function _isAllowModuleReply(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Supported areas for this demo module.
+     * The key is used as a unique event identifier,
+     * and the value is shown to administrators.
+     */
+    static public array $areaList = [
         'tokyo' => 'Tokyo Weather',
         'osaka' => 'Osaka Weather',
     ];
 
-    static public function getBotModuleReplyEngine($botId, $initParams = '')
-    {
-        $area = '';
-        $initParams = json_decode($initParams,true);
-        if(array_key_exists('area',$initParams)){
-            $area = $initParams['area'];
-        }
-        return WeatherModuleReplyEngine::getReplyEngine($area);
+    /**
+     * Create a ReplyEngine instance for this module.
+     *
+     * $initParams usually comes from the matched rule configuration
+     * (e.g. selected area or event identifier).
+     *
+     * @param string $botId
+     * @param string $initParams
+     * @return ReplyEngine|null
+     */
+    static public function getBotModuleReplyEngine(
+        $botId,
+        $initParams = ''
+    ): ?ReplyEngine {
+        return WeatherModuleReplyEngine::getReplyEngine($initParams);
     }
 
-    static public function loadEventList($botId)
+    /**
+     * Load all available events for this module and bot.
+     *
+     * These events can be listed in the management console
+     * and bound to keyword matching rules.
+     *
+     * @param string $botId
+     * @return ModuleEvent[]|null
+     */
+    static public function loadEventList($botId): ?array
     {
         $events = [];
-        foreach (self::$areaList as $uniqueId => $human) {
-            $events[] = new ModuleEvent($botId, 'WeatherModule', $uniqueId, $human);
+
+        foreach (self::$areaList as $uniqueId => $humanReadable) {
+            $events[] = new ModuleEvent(
+                $botId,
+                static::getModuleTag(),
+                $uniqueId,
+                $humanReadable
+            );
         }
+
         return $events;
     }
 }

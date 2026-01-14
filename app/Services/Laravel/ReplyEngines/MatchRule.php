@@ -63,8 +63,25 @@ class MatchRule
         // Module/event fields remain empty for common replies
         $instance->moduleName = '';
         $instance->moduleCallParams = '';
-        $instance->eventId = '';
 
         return $instance;
+    }
+
+    static public function dbModel2MatchRule(MatchRuleModel $dbModel){
+        $rule = new self();
+
+        $rule->ruleId          = (int) $dbModel->id;
+        $rule->botId           = $dbModel->bot_id;
+        $rule->keyWords        = $dbModel->keywords;
+        $rule->matchType       = $dbModel->match_type;
+        $rule->replyType       = $dbModel->reply_type;
+
+        $rule->replyContent    = $dbModel->reply_content ?? '';
+        $rule->eventId         = $dbModel->event_id ?? '';
+
+        $rule->moduleName      = $dbModel->module_name ?? '';
+        $rule->moduleCallParams= $dbModel->module_call_params ?? '';
+
+        return $rule;
     }
 }

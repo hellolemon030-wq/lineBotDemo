@@ -7,8 +7,6 @@ use App\Services\LineBot\ReplyEngine;
 use SplPriorityQueue;
 
 class CoreReplyEngine implements ReplyEngine{
-
-
     /**
      * @params SplPriorityQueue $engins;
      */

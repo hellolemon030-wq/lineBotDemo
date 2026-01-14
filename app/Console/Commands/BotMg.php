@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Services\LineBot\BotManager;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
 
 class BotMg extends Command
 {

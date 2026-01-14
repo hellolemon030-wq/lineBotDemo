@@ -1,7 +1,9 @@
 <?php
 namespace App\Services\Laravel;
 
-use App\Services\AiRobert\FileBaseAi;
+use App\Services\Laravel\BotFeatureModule\DemoModule\DemoModule;
+use App\Services\Laravel\BotFeatureModule\ModuleManager;
+use App\Services\Laravel\BotFeatureModule\WeatherModule;
 use App\Services\Laravel\ReplyEngines\DescriptionReplyEngine;
 use App\Services\Laravel\ReplyEngines\EasyAiReplyEngine;
 use App\Services\Laravel\ReplyEngines\ExactMatchEngine;
@@ -22,7 +24,7 @@ class LineBotAppProvider extends ServiceProvider{
         $this->app->singleton(LineMessageManager::class);
         $this->app->singleton(BotManager::class,StoreBotManager::class);
         $this->app->singleton(ReplyEngine::class,function(){
-            $aiReplyEngine = new FileBaseAi();
+            //$aiReplyEngine = new FileBaseAi();
             // $coreReplyEngine = new CoreReplyEngine([
             //     ['engine' => new TestReplyEngine(), 'priority' => 8],
             //     ['engine' => $aiReplyEngine, 'priority' => 5],
@@ -34,9 +36,28 @@ class LineBotAppProvider extends ServiceProvider{
                 ['engine' => new MediaReplyEngine(), 'priority' => 97],
                 ['engine' => new DescriptionReplyEngine(), 'priority' => 96],
             ]);
-            $coreReplyEngine->addReplyEngine(new EasyAiReplyEngine,100);
+            /**
+             * AI-based reply engine
+             * Used for special demo keywords or fallback scenarios.
+             */
+            $coreReplyEngine->addReplyEngine(new EasyAiReplyEngine,100);    
             return $coreReplyEngine;
         });
+
+        /**
+         * Feature module registration
+         * New bot modules must be registered here
+         * to participate in rule-based workflows.
+         */
+        $this->app->singleton(ModuleManager::class, function () {
+            $moduleManager = new ModuleManager();
+
+            $moduleManager->registerModule(DemoModule::class);    // Demo feature
+            $moduleManager->registerModule(WeatherModule::class); // Weather feature
+
+            return $moduleManager;
+        });
+
         $this->app->singleton(CoreEngine::class);
     }
 

@@ -1,22 +1,50 @@
 # LINE Bot Demo (Laravel + Docker)
-Other languages:
 
+Other languages:
 - [日本語](readme.ja.md)
 
-A Docker-based LINE Bot backend built with Laravel Sail.
-Designed for fast setup, multi-bot support, and extensible reply handling.
+A Docker-based LINE Bot backend built with Laravel Sail.  
+Designed for fast setup, multi-bot support, and a scalable auto-reply architecture.
 
-**Core Features:**
+---
 
-1. Plug-and-play – clone the repo, configure `.env`, and run.
-2. Multi-bot support – manage multiple LINE bots with database persistence.
-3. Extensible AutoReply Engine – define custom reply engines with priority.
-   - **Updated demo:** improved keyword/module matching mechanism; supports exact match, fuzzy match, and module-based replies.  
-   - For details on the updated module system and event-based matching, see [Bot Feature Module Guide](app/Services/Laravel/BotFeatureModule/readme.md)
-4. Asynchronous handling – external API calls (reply/push) can be processed asynchronously to protect core service stability.
-5. CLI tools – manage LINE bots and user messages directly from the command line.
-6. Automatic access token management – optimistic locking, auto-refresh when expired.
-7. Message storage & workflow – all incoming messages are stored for history and processing.
+## Core Features
+
+1. **Plug-and-play setup**  
+   Clone the repository, configure `.env`, and start the service using Docker.
+
+2. **Multi-bot support**  
+   Manage multiple LINE bots with persistent storage and isolated configurations.
+
+3. **Extensible auto-reply engine (rule-based)**  
+   A priority-based reply engine system that supports:
+   - Exact keyword matching  
+   - Fuzzy keyword matching  
+   - Module-based replies (event-driven)
+
+   The reply logic is fully database-driven and can be extended by adding new reply engines or feature modules.
+
+   👉 For detailed architecture and usage, see:  
+   [LINE Bot Reply Engine Architecture & Usage](app/Services/Laravel/BotFeatureModule/readme.md)
+
+4. **Module-based feature design**  
+   Business logic is encapsulated into independent feature modules (e.g. `DemoModule`, `WeatherModule`).  
+   Each module can expose multiple events that can be bound to keyword rules.
+
+5. **Asynchronous processing**  
+   External API calls (reply / push) can be processed asynchronously via queues to ensure system stability.
+
+6. **CLI tools for management**  
+   Command-line utilities to:
+   - Manage LINE bots  
+   - Configure reply rules  
+   - Inspect incoming messages  
+
+7. **Automatic access token management**  
+   LINE access tokens are refreshed automatically with optimistic locking to avoid race conditions.
+
+8. **Message persistence & workflow support**  
+   All incoming messages are stored for auditing, debugging, and further processing.
 
 ---
 
@@ -101,43 +129,10 @@ https://your-domain/webhook/1234567890
 ---
 
 ## AutoReply Engine
+👉 For detailed architecture and usage, see:  
+   [LINE Bot Reply Engine Architecture & Usage](app/Services/Laravel/BotFeatureModule/readme.md)
 
-1. `CoreEngine::webhook` receives incoming LINE requests.
-2. The system verifies the bot and token using HMAC-SHA256.
-3. Incoming messages are stored in the database.
-4. AutoReply Engines are triggered in priority order:
-   - **AI Test Engine** (demo, lightweight vector-based matching)
-   - **ExactMatchEngine** (matches keywords exactly)
-       - Supports:
-         - **Common/Text Reply**: returns predefined text
-         - **ModuleReplyEngine**: factory-based, triggers module events such as Weather, Lottery, etc.
-   - **FuzzyMatchEngine** (matches keywords partially)
-       - Supports:
-         - **Common/Text Reply**
-         - **ModuleReplyEngine**
-   - **MediaReplyEngine** (handles non-text messages)
-5. **Priority handling:** If any reply engine handles the message (adds a reply), the system stops checking further engines.
-6. **Configuration:** You can adjust or add reply engines in `app/Providers/LineBotAppProvider.php`.
-
-```php
-    //app/Providers/LineBotAppProvider.php
-    public function register(): void
-    {
-        // ......
-        $this->app->singleton(ReplyEngine::class, function () {
-            $aiReplyEngine = new FileBaseAi();
-            $coreReplyEngine = new CoreReplyEngine([
-                ['engine' => new TestReplyEngine(), 'priority' => 8],   // Adjust priority to change execution order
-                ['engine' => $aiReplyEngine, 'priority' => 5],
-            ]);
-            $coreReplyEngine->addReplyEngine(new TestReplyEngine(), 4); // You can add new engines anytime
-            return $coreReplyEngine;
-        });
-    }
-```
-> ⚠️ Note: This setup is for demonstration purposes only.  
-> For production, develop and adjust reply engines according to your own business logic.
-7. Replies are sent via LINE API, either synchronously or asynchronously, depending on the `.env` setting:
+Replies are sent via LINE API, either synchronously or asynchronously, depending on the `.env` setting:
 
     LINE_MESSAGE_HANDLE_DIRECT_MODE=false   # synchronous mode (default)
     LINE_MESSAGE_HANDLE_DIRECT_MODE=true    # asynchronous mode (queue worker must be running)
@@ -146,6 +141,7 @@ https://your-domain/webhook/1234567890
     > Start the worker after configuration:
 
     ./vendor/bin/sail artisan queue:work
+
 ---
 
 ## Message Management (CLI)
@@ -179,39 +175,62 @@ Start specific services only (without redis):
 ## Module Relationship Diagram (ASCII)
 
 ```
-[LINE Request]
-      │
-      ▼
+[LINE Webhook Request]
+        │
+        ▼
 [CoreEngine::webhook]
-      │
-      ├─ Verify Bot & Token (HMAC-SHA256)
-      │
-      ├─ Insert Message into DB
-      │
-      +-- Trigger AutoReply Engines             <-- Core: handle messages via priority-based engines
-      |       │
-      |       +-- AI Test Engine                (demo, lightweight vector-based matching)
-      |       +-- ExactMatchEngine              (matches keywords exactly)
-      |       |       ├─ Common/Text Reply      (replyContent)
-      |       |       └─ ModuleReplyEngine     (factory-based, per module events: Weather, Lottery, etc.)
-      |       +-- FuzzyMatchEngine              (matches keywords fuzzily)
-      |       |       ├─ Common/Text Reply
-      |       |       └─ ModuleReplyEngine
-      |       +-- MediaReplyEngine               (handles non-text messages)
-      |       +-- DescriptionReplyEngine         (demo description)
-      |       +-- ......                         (custom engines: implement ReplyEngine per business logic)
-      │
-      └─ Send reply (sync / async) → LINE API
+        │
+        ├─ Verify Bot & Token (HMAC-SHA256)
+        │
+        ├─ Insert Message into DB
+        │
+        ├─ Trigger Auto-Reply Engines
+        │       (Core: handle messages via priority-based engines)
+        │
+        │       ├─ AI Test Engine
+        │       │     (demo, lightweight vector-based matching)
+        │       │
+        │       ├─ ExactMatchEngine
+        │       │     (matches keywords exactly)
+        │       │     ├─ Text Reply
+        │       │     │     (replyContent)
+        │       │     └─ Module Reply Engine
+        │       │           (factory-based, per module events:
+        │       │            Weather, Lottery, etc.)
+        │       │
+        │       ├─ FuzzyMatchEngine
+        │       │     (matches keywords fuzzily)
+        │       │     └─ Text Reply
+        │       │
+        │       ├─ MediaReplyEngine
+        │       │     (handles non-text messages)
+        │       │
+        │       ├─ DescriptionReplyEngine
+        │       │     (demo description)
+        │       │
+        │       └─ Custom Reply Engines
+        │             (implement ReplyEngine per business logic)
+        │
+        └─ Send Reply (sync / async) → LINE Messaging API
+
 
 [CLI Tools]
-      │
-      ├─ linebot:mg     (Add/Modify Bots)
-      ├─ line:msg       (View/Reply Messages)
-      └─ line:replyRule      (Manage keyword/module reply rules: add/modify/delete)  <-- todo
+        │
+        ├─ linebot:mg
+        │     (add / modify bots)
+        │
+        ├─ line:msg
+        │     (view / reply messages)
+        │
+        └─ line:replyRule
+              (manage keyword / module reply rules:
+               add / modify / delete)
+
 
 [Jobs / Queue Workers]
-      │
-      └─ Handle async push/reply tasks to LINE API
+        │
+        └─ Handle async push / reply tasks
+              → LINE Messaging API
 ```
 
 ---
@@ -224,3 +243,5 @@ Start specific services only (without redis):
 - HTTP 403 indicates authorization failure and may require manual update
 
 ---
+
+
