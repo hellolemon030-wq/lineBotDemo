@@ -142,15 +142,10 @@ updated_at: 2026-01-14 23:08:11
 
 Field Explanation
 - match_type: exact | fuzzy
-- reply_type:
-- common → plain text reply
-- module → delegate to a feature module
-- reply_content:
-- used only when reply_type = common
-- module_name:
-- fully-qualified class name of the module
-- module_call_params:
-- event identifier passed into the module
+- reply_type: common → plain text reply / module → delegate to a feature module
+- reply_content: used only when reply_type = common
+- module_name: fully-qualified class name of the module
+- module_call_params: event identifier passed into the module
 
 ---
 
