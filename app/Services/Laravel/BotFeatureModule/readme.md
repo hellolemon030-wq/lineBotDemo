@@ -154,7 +154,7 @@ Field Explanation
 There is no generic BotFeatureModule base directory.
 New modules are developed by referencing DemoModule and WeatherModule.
 
-5.1 Module Registration
+### 5.1 Module Registration
 ```php
 $moduleManager = new ModuleManager();
 
@@ -170,6 +170,34 @@ Registered modules declare which events they support for a given bot.
 ```php
 $botId = '1234567890';
 $eventList = $moduleManager->loadEventList($botId);
+
+/*
+|--------------------------------------------------------------------------
+| Module Event Discovery
+|--------------------------------------------------------------------------
+|
+| ModuleManager loads all available module events for the given bot.
+| Internally, it iterates through all registered modules and collects
+| their exposed events.
+|
+| Since the following modules have been registered:
+|
+|   $moduleManager->registerModule(DemoModule::class);
+|   $moduleManager->registerModule(WeatherModule::class);
+|
+| The call above is functionally equivalent to:
+|
+| NOTE:
+| Each module controls whether it can handle user messages by
+| overriding the `_isAllowModuleReply()` method.
+| Returning `true` indicates that the module is allowed to participate
+| in message handling.
+|
+*/
+$eventList = array_merge(
+    DemoModule::loadEventList($botId),
+    WeatherModule::loadEventList($botId)
+);
 
 foreach ($eventList as $event) {
     $event->moduleTag;            // Module identifier
@@ -205,7 +233,7 @@ line:replyRule del [botId] [ruleId]
 
 ## 8. Module Event Helper Command
 
-line:replyRule showModuleEvents [botId]
+line:replyRule showModuleEventList [botId]
 
 Example output:
 
