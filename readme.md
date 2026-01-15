@@ -1,154 +1,138 @@
 # LINE Bot Demo (Laravel + Docker)
 
-Other languages:
-- [日本語](readme.ja.md)
+他の言語バージョン:
+- [English](readme.en.md)
 
-A Docker-based LINE Bot backend built with Laravel Sail.  
-Designed for fast setup, multi-bot support, and a scalable auto-reply architecture.
+Laravel Sail を利用した、Docker ベースの LINE Bot バックエンドのデモプロジェクトです。  
+最小限の設定で即座に起動でき、複数 Bot 管理、自動応答エンジン、非同期処理、CLI 管理機能を備えた開発者向けの構成となっています。
 
----
+## 主な特徴（Core Features）
 
-## Core Features
+1. **すぐに使える**  
+   リポジトリをクローンし、`.env` を設定するだけで起動可能です。
 
-1. **Plug-and-play setup**  
-   Clone the repository, configure `.env`, and start the service using Docker.
+2. **マルチ Bot 対応**  
+   データベース上で複数の LINE Bot を一元管理できます。
 
-2. **Multi-bot support**  
-   Manage multiple LINE bots with persistent storage and isolated configurations.
+3. **拡張可能な自動応答エンジン**  
+   優先度に基づいて、カスタム応答エンジンや機能モジュールを柔軟に追加できます。
 
-3. **Extensible auto-reply engine (rule-based)**  
-   A priority-based reply engine system that supports:
-   - Exact keyword matching  
-   - Fuzzy keyword matching  
-   - Module-based replies (event-driven)
+4. **非同期処理対応**  
+   reply / push API を非同期で処理することで、コアサービスの安定性を確保しています。
 
-   The reply logic is fully **database-driven** and can be extended by adding new reply engines or feature modules.
+5. **CLI 管理ツール**  
+   LINE Bot の登録、応答ルール管理、メッセージ操作をコマンドラインから実行できます。
 
-   👉 For detailed architecture and usage, see:  
-   [LINE Bot Reply Engine Architecture & Usage](app/Services/Laravel/BotFeatureModule/readme.md)
+6. **アクセストークンの自動管理**  
+   楽観的ロックを用いて、LINE のアクセストークンを自動更新します。
 
-4. **Module-based feature design**  
-   Business logic is encapsulated into independent feature modules (e.g. `DemoModule`, `WeatherModule`).  
-   Each module can expose multiple events that can be bound to keyword rules.
-
-5. **Asynchronous processing**  
-   External API calls (reply / push) can be processed asynchronously via queues to ensure system stability.
-
-6. **CLI tools for management**  
-   Command-line utilities to:
-   - Manage LINE bots  
-   - Configure reply rules  
-   - Inspect incoming messages  
-
-7. **Automatic access token management**  
-   LINE access tokens are refreshed automatically with optimistic locking to avoid race conditions.
-
-8. **Message persistence & workflow support**  
-   All incoming messages are stored for auditing, debugging, and further processing.
+7. **メッセージ履歴管理**  
+   すべての受信メッセージをデータベースに保存し、後続処理や分析に利用できます。
 
 ---
 
-## Requirements
+## 必要環境 (Requirements)
 
 - Docker & Docker Compose
 - Composer
 
 ---
 
-## Setup
+## セットアップ
 
-### 1. Install dependencies
+### 1. 依存関係のインストール
 
 ```bash
 composer install
 ```
 
-### 2. Environment configuration
+### 2. 環境設定
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and set the following values:
+.env を編集して以下を設定：
 
 ```bash
-LINE_CHANNEL_ID=            # Default LINE Bot Channel ID  
-LINE_CHANNEL_SECRET=       # Default LINE Bot Channel Secret  
+LINE_CHANNEL_ID=            # デフォルトの LINE Bot チャンネルID
+LINE_CHANNEL_SECRET=        # デフォルトの LINE Bot チャンネルシークレット
 LINE_MESSAGE_HANDLE_DIRECT_MODE=false
 ```
 
-> When `LINE_MESSAGE_HANDLE_DIRECT_MODE` is set to true, the system will handle incoming LINE messages in **asynchronous mode**.  
-> In this mode, API calls (reply/push) are processed via Laravel queue workers, which helps offload work from the main webhook and improve stability under load.  
-> After completing the `.env` configuration, start the queue worker manually:./vendor/bin/sail artisan queue:work
+> LINE_MESSAGE_HANDLE_DIRECT_MODE を true に設定すると、受信メッセージの処理は 非同期モード で行われます。
+> この場合、返信やプッシュ API 呼び出しは Laravel キューワーカー経由で処理され、Webhook の負荷を軽減し、安定性を向上させます。
+> 設定後、手動でキューワーカーを起動してください:./vendor/bin/sail artisan queue:work
 
-### 3. Start Docker containers
+### 3. Docker コンテナの起動
 
 ```bash
 ./vendor/bin/sail up -d
 ```
 
-### 4. Initialize application
+### 4. アプリケーションの初期化
 
 ```bash
 ./vendor/bin/sail artisan key:generate  
 ./vendor/bin/sail artisan migrate
 ```
 
-### 5. System health check
+### 5. システムヘルスチェック
+
 ```bash
 ./vendor/bin/sail artisan line:docker
 ```
 
-This command checks database, queue, and bot system status.
+データベース、キュー、Bot システムの状態をチェックします。
 
 ---
 
-## LINE Bot Configuration
+## LINE Bot 設定
 
-### Register a LINE Bot (supports multiple bots)
+### LINE Bot の登録（マルチボット対応）
 
 ./vendor/bin/sail artisan linebot:mg add [LINE_BOT_ID] [LINE_BOT_SECRET]
 
-Example:
+例:
 
 ```bash
 ./vendor/bin/sail artisan linebot:mg add 1234567890 your_bot_secret
 ```
 
-### Webhook configuration
+### Webhook 設定
 
-The system supports both a default bot and multiple bots.
+デフォルト Bot と複数 Bot の両方に対応しています。
 
-#### Default bot
+#### デフォルト Bot
 
-If no bot ID is specified in the webhook URL, the system will use  
-the default bot configured in `.env`:
+Webhook URL に Bot ID が指定されていない場合、.env のデフォルト Bot を使用:
 
 https://your-domain/webhook
 
-#### Multiple bots
+#### 複数 Bot
 
-After adding bots to the system, you may specify a bot key in the webhook URL:
+システムに Bot を追加した後、Webhook URL に Bot キーを指定できます:
 
 https://your-domain/webhook/{BOT_KEY}
 
-Example:
+例:
 
 https://your-domain/webhook/1234567890
 
-> The bot is ultimately identified by its Channel credentials.  
-> The URL parameter is used to select the bot configuration.
+> Bot は最終的に Channel 認証情報で特定されます。URL パラメータは設定済み Bot を選択するためのものです。
 
 ---
 
-## AutoReply Engine
-👉 For detailed architecture and usage, see:  
+## 自動応答エンジン (AutoReply Engine)
+
+👉 詳細なアーキテクチャおよび使用方法については、以下を参照してください。
    [LINE Bot Reply Engine Architecture & Usage](app/Services/Laravel/BotFeatureModule/readme.md)
 
-Replies are sent via LINE API, either synchronously or asynchronously, depending on the `.env` setting:
 
-    LINE_MESSAGE_HANDLE_DIRECT_MODE=false   # synchronous mode (default)
-    LINE_MESSAGE_HANDLE_DIRECT_MODE=true    # asynchronous mode (queue worker must be running)
+返信は LINE API を通じて、同期または非同期で送信されます (.env 設定による):
+
+    LINE_MESSAGE_HANDLE_DIRECT_MODE=false   # 同期モード（デフォルト）
+    LINE_MESSAGE_HANDLE_DIRECT_MODE=true    # 非同期モード（キューワーカー起動必須）
 
     > When asynchronous mode is enabled, API calls (reply/push) are handled via Laravel queue workers.
     > Start the worker after configuration:
@@ -156,22 +140,21 @@ Replies are sent via LINE API, either synchronously or asynchronously, depending
 ```bash
 ./vendor/bin/sail artisan queue:work
 ```
-
 ---
 
-## Message Management (CLI)
+## メッセージ管理 (CLI)
 
-### View incoming messages
+### 受信メッセージ一覧表示
 
 ```bash
 ./vendor/bin/sail artisan line:msg showList
 ```
 
-### Reply to a user
+### ユーザーへの返信
 
 ./vendor/bin/sail artisan line:msg reply [LINE_BOT_ID] [USER_ID] [CONTENT]
 
-Example:
+例:
 
 ```bash
 ./vendor/bin/sail artisan line:msg reply 1234567890 Uxxxxxxxx "Hello from CLI"
@@ -179,18 +162,18 @@ Example:
 
 ---
 
-## Development
+## 開発
 
-Stop containers:
+コンテナ停止:
 
 ```bash
 ./vendor/bin/sail down
 ```
 
-Start specific services only (without redis):
+サービス起動::
 
 ```bash
-./vendor/bin/sail up -d laravel.test mysql
+./vendor/bin/sail up -d
 ```
 
 ---
@@ -258,64 +241,66 @@ Start specific services only (without redis):
 
 ---
 
-## Notes
+## 注意事項
 
-- Access tokens are stored in database and refreshed automatically
-- Token refresh uses optimistic locking
-- HTTP 401 triggers token refresh
-- HTTP 403 indicates authorization failure and may require manual update
-
----
-## Usage Example
-
-This section demonstrates a complete, minimal workflow for using this project —  
-from registering a LINE bot to configuring keyword-based auto replies via CLI.
-
-The goal is to demonstrate an end-to-end workflow using real CLI commands and practical examples.
-
+- アクセストークンはデータベースに保存され、自動更新されます
+- トークン更新は楽観的ロックで処理
+- HTTP 401 発生時は自動更新
+- HTTP 403 発生時は権限エラーの可能性があり、手動更新が必要な場合があります
 ---
 
-### Step 1. Create a LINE Bot and Register It into the System
+## 使用例（Usage Example）
+
+このセクションでは、本プロジェクトを利用するための  
+**最小構成かつ一連の流れ** を紹介します。
+
+LINE Bot の登録から、CLI を用いたキーワード自動応答の設定まで、  
+**実際のコマンドと具体例** を用いてエンドツーエンドで説明します。
+
+---
+
+### Step 1. LINE Bot を作成し、システムへ登録する
 ![alt text](image-1.png)
 
-For the following example, assume:
+以下の例では、次の情報を使用します。
 
 - Channel ID: `1234567890`
 - Channel Secret: `qwertyuiopasdfghjkl`
 
-Register the bot into this system using the CLI command below:
+次の CLI コマンドを実行して、LINE Bot を本システムに登録します。
 ```bash
 # NOTE:
-# You must provide valid Channel ID and Channel Secret.
-# The command will also request an access token automatically.
-# If the credentials are invalid, the bot cannot be registered.
+# 有効な Channel ID / Channel Secret を指定する必要があります。
+# このコマンドは同時にアクセストークンの取得も行います。
+# 認証情報が正しくない場合、Bot は登録されません。
 ./vendor/bin/sail php artisan linebot:mg add 1234567890 qwertyuiopasdfghjkl
 ```
 
-After registration, configure the webhook URL in the LINE Developers Console as follows:
+登録後、LINE Developers Console にて Webhook URL を以下の形式で設定してください。
 
 https://your-domain.com/webhook/{channelId}
 
 ![alt text](image-2.png)
 
-### Step 2. Add a Simple Keyword-Based Reply Rule (Exact Match)
-Add a rule so that when a user sends テスト, the bot replies with
-テストは成功です。
+### Step 2. シンプルなキーワード自動応答ルールを追加（完全一致）
+ユーザーが テスト と送信した場合に、
+テストは成功です。 と返信するルールを追加します。
 ```bash
+# 完全一致（Exact Match）の自動応答ルールを追加
 ./vendor/bin/sail php artisan line:replyRule add 1234567890 exact 'テスト' common 'テストは成功です。'
+# 成功すると、CLI に「Reply rule added successfully.」と表示されます。
 ```
-If successful, the CLI will output: Reply rule added successfully.
 ![alt text](image-3.png)
 
-### Step 3. Bind a Keyword to a Feature Module (Weather Module Example)
-This demo project includes a WeatherModule that provides weather information
-for specific locations.
+### Step 3. キーワードを機能モジュールに紐付ける（Weather Module の例）
+本デモプロジェクトには、特定地域の天気情報を返す
+WeatherModule が含まれています。
 
-First, list all available module events for the specified bot:
+まず、指定した Bot で利用可能なモジュールイベント一覧を表示します。
 ```bash
 ./vendor/bin/sail php artisan line:replyRule showModuleEventList 1234567890
 ```
-Example output:
+出力例：
 ```bash
 +-------------------------------------------------------------+---------+---------------+----------------------------------------------------------------------------------------------------------------------+
 | ModuleTag                                                   | EventId | Description   | AddCommand                                                                                                           |
@@ -328,136 +313,138 @@ Example output:
 | App\Services\Laravel\BotFeatureModule\WeatherModule         | osaka   | Osaka Weather | line:replyRule add 1234567890 exact [keyword] module 'App\Services\Laravel\BotFeatureModule\WeatherModule' osaka     |
 +-------------------------------------------------------------+---------+---------------+----------------------------------------------------------------------------------------------------------------------+
 ```
-You can copy and slightly modify the AddCommand to register a module-based rule.
+AddCommand をコピーしてキーワード部分を変更することで、
+モジュール連携ルールを簡単に追加できます。
 
-Example:
-When a user sends 大阪天気, trigger the Osaka weather module.
-
+例：
+ユーザーが 大阪天気 と送信した場合に、大阪の天気情報を返します。
 ```bash
 # ./vendor/bin/sail php artisan line:replyRule add [botId] exact [keyWord] module [ModuleTag] [EventId]
-```
-```bash
 ./vendor/bin/sail php artisan line:replyRule add 1234567890 exact '大阪天気' module 'App\Services\Laravel\BotFeatureModule\WeatherModule' osaka
 ```
 ![alt text](image-4.png)
 
 
-### Step 4. Fuzzy Match Rules and Rule Management
+### Step 4. あいまい一致（Fuzzy Match）ルールとルール管理
 
-Add a fuzzy-match rule so that if a user message contains the keyword
-キーワード, the bot replies with a predefined message.
+ユーザーのメッセージに キーワード が含まれている場合に、
+あらかじめ定義したメッセージを返信するルールを追加します。
 ```bash
 # ./vendor/bin/sail php artisan line:replyRule add [botId] fuzzy [keyWord] common [reply Message]
-```
-```bash
 ./vendor/bin/sail php artisan line:replyRule add 1234567890 fuzzy 'キーワード' common 'メッセージの中にメッセージの中に「キーワード」が含まれています。'
 ```
 ![alt text](image-6.png)
 
-You can also manage existing rules:
+既存ルールの管理も CLI から行えます。
 ```bash
-# List all reply rules for the bot
+# 現在登録されている自動応答ルールを一覧表示
 ./vendor/bin/sail php artisan line:replyRule show 1234567890
 
-# Delete a specific rule by rule ID
+# RuleId を指定してルールを削除
 ./vendor/bin/sail php artisan line:replyRule del 1234567890 [RuleId]
 ```
 
 ---
-This example covers the full basic workflow:
-- Registering a LINE bot
-- Configuring webhook integration
-- Adding exact-match and fuzzy-match replies
-- Binding keywords to feature modules
-- Managing rules via CLI
+この使用例では、以下の一連の基本フローをカバーしています。
+- INE Bot の登録
+- Webhook の設定
+- 完全一致 / あいまい一致の自動応答設定
+- 機能モジュールとのキーワード連携
+- CLI によるルール管理
 
 ---
 
-## Possible Extensions & Design Considerations
+## Possible Extensions / Design Considerations
 
-The following items are **not features planned for immediate implementation**,  
-but rather extension directions that naturally follow from the current architecture and design principles.
+以下は「今すぐ実装する機能」ではなく、  
+現在の設計方針およびアーキテクチャから **自然に発展可能な拡張方向** を示しています。
 
-> This project can be deployed and used as-is.  
-> However, since it is a demo implementation, certain features are not heavily optimized for performance.  
-> For production or commercial use, feature-level and operational risks should be evaluated based on actual requirements.
+※ 本プロジェクトはそのままデプロイして利用することも可能ですが、  
+現時点ではデモ実装であるため、一部機能において性能最適化を重視していません。  
+商用利用を検討する場合は、用途に応じて機能面・運用面のリスクを各自で評価してください。
 
-The system is designed with **extensibility and secondary development in mind**,  
-adopting a plugin-oriented and loosely coupled architecture.  
-Each component has a clearly defined responsibility and interacts through explicit interfaces,  
-making it possible to improve or replace individual parts without major changes to the core system.
-
----
-
-### 1. Keyword / Fuzzy Matching Optimization
-
-The current implementation loads reply rules from the database and evaluates them sequentially,  
-prioritizing simplicity and clarity.
-
-In future iterations, this matching logic can be replaced by independent modules, such as:
-
-- Indexed keyword search
-- Cache-based acceleration
-- Vector-based fuzzy matching
+本プロジェクトは、**二次開発や機能拡張を前提とした構成**を意識し、  
+プラグイン指向かつ疎結合なアーキテクチャを採用しています。  
+各機能は責務単位で分離され、明確なインターフェースを通じて連携するため、  
+既存の実装を大きく変更せずに、段階的な改善・差し替えが可能です。
 
 ---
 
-### 2. Web-Based Management UI (Equivalent to CLI)
+### 1. キーワード／あいまいマッチングの最適化
 
-All management features currently available via CLI can be exposed through a Web UI, including:
+現在は、ルールをデータベースからロードし逐次評価する  
+シンプルな実装を採用しています。
 
-- Bot management
-- Reply rule management
-- Module management
+将来的には、以下のような手法を  
+**独立したモジュールとして差し替える**ことが可能です。
 
-Since internal APIs are already shared,  
-this can be achieved by adding a UI layer without modifying core logic.
-
----
-
-### 3. LINE In-App Browser & User Authentication Abstraction
-
-By leveraging LIFF (LINE Front-end Framework) and  
-LINE Login (OAuth 2.0 / OpenID Connect), the system can provide:
-
-- Web-based workflows inside the LINE in-app browser
-- Unified access to user identity and authentication data
-
-This enables business workflows beyond simple message-based interactions.
+- インデックス化による高速検索
+- キャッシュ戦略の導入
+- ベクトル検索等を用いた高度なあいまい検索
 
 ---
 
-### 4. SaaS-Oriented Authorization & Billing Design
+### 2. Web ベース管理 UI（CLI と同等機能）
 
-For potential SaaS use cases, the architecture allows control based on subscription tiers, such as:
+現在 CLI で提供している以下の管理機能を、  
+Web UI として提供することが可能です。
 
-- Number of manageable bots
-- Available modules
-- Access to advanced features
+- Bot 管理
+- 返信ルール管理
+- モジュール管理
 
-(The actual control model is not limited to the above examples.)
-
----
-
-### 5. Open Module Architecture
-
-By stabilizing `ModuleBase` and providing shared abstractions,  
-the platform can support external module development through:
-
-- Module development guidelines
-- Common utilities and interfaces
-- Reusable infrastructure components
+内部 API は共通化されているため、  
+UI レイヤーのみを追加する構成を想定しています。
 
 ---
 
-These ideas represent **practical and achievable extension paths**  
-that do not require a large-scale redesign of the existing system.
+### 3. LINE アプリ内ブラウザ／ユーザー認証の抽象化
 
-#### (Optional) Future Concept: Module Ecosystem
+LIFF（LINE Front-end Framework）および  
+LINE Login（OAuth 2.0 / OpenID Connect）を利用し、
 
-Although still conceptual, the architecture allows for the possibility of:
+- LINE アプリ内ブラウザ上での Web フロー
+- ユーザー識別・認証情報の取得
 
-- Developers publishing custom modules
-- Users installing or purchasing modules via a marketplace
+を共通 API としてラップすることで、  
+単なるメッセージ返信にとどまらない業務フロー拡張を可能にします。
+
+---
+
+### 4. SaaS 向け権限・課金設計
+
+将来的な SaaS 展開を見据え、  
+サブスクリプション階層に応じて、以下の制御が可能です。
+
+- 管理可能な Bot 数
+- 利用可能な Module
+- 高度な機能の提供範囲
+
+※ 実際の制御内容はこれらに限定されません。
+
+---
+
+### 5. オープンなモジュールアーキテクチャ
+
+`ModuleBase` を安定化し、以下を提供することで  
+外部開発者による機能拡張を促進できます。
+
+- モジュール開発ガイド
+- 共通ユーティリティ／抽象インターフェース
+- 再利用可能な基盤機能
+
+---
+
+これらは、大規模な再設計を行わずとも、  
+本プロジェクトを **プラットフォームとして発展させるための現実的な拡張構想** です。  
+実装可能性の高いものから、段階的に推進できると考えています。
+
+#### （参考）将来的構想：モジュールエコシステム
+
+現時点では構想段階ですが、  
+設計次第では以下のような発展も考えられます。
+
+- 開発者が Module を公開
+- 利用者が導入・購入できるマーケットプレイス構想
 
 

@@ -1,5 +1,8 @@
 # LINE Bot Demo (Laravel + Docker)
 
+他の言語バージョン:
+- [English](readme.en.md)
+
 Laravel Sail を利用した、Docker ベースの LINE Bot バックエンドのデモプロジェクトです。  
 最小限の設定で即座に起動でき、複数 Bot 管理、自動応答エンジン、非同期処理、CLI 管理機能を備えた開発者向けの構成となっています。
 
