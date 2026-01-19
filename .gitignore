@@ -25,3 +25,7 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+/develop_temp
+.DS_Store
+docs/
