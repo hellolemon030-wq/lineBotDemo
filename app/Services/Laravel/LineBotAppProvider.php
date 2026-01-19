@@ -11,6 +11,7 @@ use App\Services\Laravel\ReplyEngines\FuzzyMatchEngine;
 use App\Services\Laravel\ReplyEngines\MediaReplyEngine;
 use App\Services\LineBot\BotManager;
 use App\Services\LineBot\ReplyEngine;
+use App\Services\pegaservice\PegaReplyEngine;
 use Illuminate\Support\ServiceProvider;
 
 class LineBotAppProvider extends ServiceProvider{
@@ -41,6 +42,7 @@ class LineBotAppProvider extends ServiceProvider{
              * Used for special demo keywords or fallback scenarios.
              */
             $coreReplyEngine->addReplyEngine(new EasyAiReplyEngine,100);    
+            $coreReplyEngine->addReplyEngine(new PegaReplyEngine,101);
             return $coreReplyEngine;
         });
 

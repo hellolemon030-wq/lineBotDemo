@@ -25,3 +25,12 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+/.env copy
+/.env copy.example
+/.env.copy
+/.env.copy.example
+docs/
+app/Console/Commands/.gitignore
+
+.DS_Store

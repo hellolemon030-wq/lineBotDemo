@@ -1,0 +1,3 @@
+[submodule "app/Services/pegaservice/pegaservice"]
+	path = app/Services/pegaservice/pegaservice
+	url = git@github.com:hellolemon030-wq/pegaservice.git
