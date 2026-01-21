@@ -2,5 +2,5 @@
 namespace App\Services\LineBot;
 
 interface ReplyEngine{
-    public function handle(LineMessage $lineMessage,lineReplyMessage &$lineReplyMessage);
+    public function handle(LineMessage $lineMessage,LineReplyMessage &$lineReplyMessage);
 }

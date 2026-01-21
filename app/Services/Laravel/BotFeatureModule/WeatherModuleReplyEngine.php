@@ -2,7 +2,7 @@
 namespace App\Services\Laravel\BotFeatureModule;
 
 use App\Services\LineBot\LineMessage;
-use App\Services\LineBot\lineReplyMessage;
+use App\Services\LineBot\LineReplyMessage;
 use App\Services\LineBot\ReplyEngine;
 use Illuminate\Support\Facades\Http;
 
@@ -35,7 +35,7 @@ class WeatherModuleReplyEngine implements ReplyEngine{
     /**
      * @param $lineMessage LineMessage;
      */
-    public function handle(LineMessage $lineMessage, lineReplyMessage &$lineReplyMessage)
+    public function handle(LineMessage $lineMessage, LineReplyMessage &$lineReplyMessage)
     {
         $queryParams = $this->getXYByAreaName($this->initArea);
         $result = $this->queryResult($queryParams['x'],$queryParams['y']);
