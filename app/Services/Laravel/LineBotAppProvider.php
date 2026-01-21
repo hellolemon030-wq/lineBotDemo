@@ -1,6 +1,8 @@
 <?php
 namespace App\Services\Laravel;
 
+use App\Services\Laravel\BotFeatureModule\BotAccountModule\BotAccountModule;
+use App\Services\Laravel\BotFeatureModule\BotAccountModule\Filament\Resources\Bota\BotaResource;
 use App\Services\Laravel\BotFeatureModule\DemoModule\DemoModule;
 use App\Services\Laravel\BotFeatureModule\ModuleManager;
 use App\Services\Laravel\BotFeatureModule\WeatherModule;
@@ -11,6 +13,8 @@ use App\Services\Laravel\ReplyEngines\FuzzyMatchEngine;
 use App\Services\Laravel\ReplyEngines\MediaReplyEngine;
 use App\Services\LineBot\BotManager;
 use App\Services\LineBot\ReplyEngine;
+use Filament\Facades\Filament;
+use Filament\Navigation\NavigationItem;
 use Illuminate\Support\ServiceProvider;
 
 class LineBotAppProvider extends ServiceProvider{
@@ -54,6 +58,7 @@ class LineBotAppProvider extends ServiceProvider{
 
             $moduleManager->registerModule(DemoModule::class);    // Demo feature
             $moduleManager->registerModule(WeatherModule::class); // Weather feature
+            $moduleManager->registerModule(BotAccountModule::class);
 
             return $moduleManager;
         });

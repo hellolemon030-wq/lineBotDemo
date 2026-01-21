@@ -80,4 +80,17 @@ class DemoModule extends ModuleBase
 
         return $demoReplyEngine;
     }
+
+    /**
+     * 管理后台相关；
+     * 若需要filament引擎方案；
+     * 则需要标记为true
+     * 随后，
+     * ./vendor/bin/sail php artisan make:filament-resource
+     * 选择合适的命名空间，filament/source将创建在该module目录下；可以在该目录下进行开发；
+     */
+    public static function _needFilamentSupport()
+    {
+        return true;
+    }
 }

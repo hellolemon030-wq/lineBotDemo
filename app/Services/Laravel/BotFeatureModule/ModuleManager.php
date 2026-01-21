@@ -1,6 +1,10 @@
 <?php
 namespace App\Services\Laravel\BotFeatureModule;
 
+use Filament\Facades\Filament;
+use Filament\Panel;
+use Illuminate\Support\Facades\Log;
+
 class ModuleManager
 {
     /**
@@ -60,5 +64,20 @@ class ModuleManager
         }
 
         return $events;
+    }
+
+
+
+    /**
+     * 初始化模块的 Filament Resource
+     */
+    public function _initModuleFilament2Panel(Panel $panel): void
+    {
+        foreach($this->_modules as $module){
+            if($module::_needFilamentSupport()){
+                $discoveryConfig = $module::getFilamentDiscoveryConfig();
+                $panel->discoverResources($discoveryConfig['in'],$discoveryConfig['for']);
+            }
+        }
     }
 }
