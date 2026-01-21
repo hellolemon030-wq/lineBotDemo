@@ -2,7 +2,7 @@
 namespace App\Services\Laravel;
 
 use App\Services\LineBot\LineMessage;
-use App\Services\LineBot\lineReplyMessage;
+use App\Services\LineBot\LineReplyMessage;
 use App\Services\LineBot\ReplyEngine;
 use SplPriorityQueue;
 
@@ -37,7 +37,7 @@ class CoreReplyEngine implements ReplyEngine{
         return $result;
     }
 
-    public function handle(LineMessage $lineMessage, lineReplyMessage &$lineReplyMessage)
+    public function handle(LineMessage $lineMessage, LineReplyMessage &$lineReplyMessage)
     {
         $engineQueue = clone $this->engines;
         foreach ($engineQueue as $replyEngine) {

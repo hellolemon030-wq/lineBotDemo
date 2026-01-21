@@ -2,7 +2,7 @@
 namespace App\Services\Laravel\ReplyEngines;
 
 use App\Services\LineBot\LineMessage;
-use App\Services\LineBot\lineReplyMessage;
+use App\Services\LineBot\LineReplyMessage;
 use App\Services\LineBot\ReplyEngine;
 
 /**
@@ -23,7 +23,7 @@ class MediaReplyEngine implements ReplyEngine
      * @param lineReplyMessage $lineReplyMessage The reply message object to append responses
      * @return bool True if the message is handled; false otherwise
      */
-    public function handle(LineMessage $lineMessage, lineReplyMessage &$lineReplyMessage): bool
+    public function handle(LineMessage $lineMessage, LineReplyMessage &$lineReplyMessage): bool
     {
         // Only non-text messages are handled by this engine
         if ($lineMessage->getMessageType() === LineMessage::MESSAGE_TYPE_TEXT) {
